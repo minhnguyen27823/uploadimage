@@ -1,13 +1,13 @@
 package com.example.uploadimage;
 
 public class User {
-    private String avt;
+   private Prob probability;
 
-    public String getAvt() {
-        return avt;
+    public Prob getProbability() {
+        return probability;
     }
 
-    public void setAvt(String avt) {
-        this.avt = avt;
+    public void setProbability(Prob probability) {
+        this.probability = probability;
     }
 }

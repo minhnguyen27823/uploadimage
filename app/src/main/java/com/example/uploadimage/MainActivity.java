@@ -7,6 +7,8 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.app.Activity;
@@ -29,7 +31,6 @@ import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
@@ -40,6 +41,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.net.Socket;
 
 import api.ApiService;
 import api.Const;
@@ -48,9 +50,11 @@ import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
     Bitmap bitmap;
+    public static final int STATUS_CODE = 0;
 
     public static final String TAG = MainActivity.class.getName();
     private static final int MY_REQUEST_CODE = 10;
@@ -59,7 +63,9 @@ public class MainActivity extends AppCompatActivity {
     private EditText editUsername, editPassword;
     private ImageView imgFromGallery, imgFromApi;
     private Button btnSelectImage, button, btnpicture;
-    private TextView tvUsername, tvPassword;
+    private TextView tvUsername, tvPassword,tvPredict;
+    private Uri mUri;
+    private ProgressDialog mProgressDialog;
 
 
     private ActivityResultLauncher<Intent> mActivityResultLauncher = registerForActivityResult(
@@ -74,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
                             return;
                         }
                         Uri uri = data.getData();
+                        mUri = uri;
                         try {
                             bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
                             imgFromGallery.setImageBitmap(bitmap);
@@ -92,6 +99,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initUi();
+
+        //newwww/*
+
+        mProgressDialog=new ProgressDialog(this);
+        mProgressDialog.setMessage("Please wait....");
+        /////end
         btnSelectImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -99,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        button.setOnClickListener(new View.OnClickListener() {
+      /* button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 ByteArrayOutputStream byteArrayOutputStream;
@@ -109,10 +122,10 @@ public class MainActivity extends AppCompatActivity {
                     byte[] bytes = byteArrayOutputStream.toByteArray();
                     final String base64Image = Base64.encodeToString(bytes, Base64.DEFAULT);
                     RequestQueue queue = Volley.newRequestQueue(getApplicationContext());
-                    String url = "http://192.168.1.7/upload-image-android/upload.php";
+                    String url = "http://192.168.1.3/upload-image-android/upload.php";
 
                     StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
-                            new Response.Listener<String>() {
+                            new com.android.volley.Response.Listener<String>() {
                                 @Override
                                 public void onResponse(String response) {
                                     if (response.equals("success")) {
@@ -125,7 +138,9 @@ public class MainActivity extends AppCompatActivity {
                         public void onErrorResponse(VolleyError error) {
                             Toast.makeText(getApplicationContext(), error.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
                         }
-                    }) {
+                    }
+
+                    ) {
                         protected Map<String, String> getParams() {
                             Map<String, String> paramV = new HashMap<>();
                             paramV.put("image", base64Image);
@@ -137,9 +152,49 @@ public class MainActivity extends AppCompatActivity {
 
                 }
             }
+        });*/
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(mUri != null){
+                    callApiRegisterAccount();
+                }
+            }
+
+            private void callApiRegisterAccount() {
+                mProgressDialog.show();
+
+                String strRealPath = RealPathUtil.getRealPath(getApplicationContext(), mUri);
+                Log.e("Minh",strRealPath);
+
+                File file = new File(strRealPath);
+                RequestBody requestBodyImage = RequestBody.create(MediaType.parse("multipart/form-data"),file);
+                MultipartBody.Part MultipartBodyImage = MultipartBody.Part.createFormData(Const.KEY_IMAGE,file.getName(),requestBodyImage);
+                ApiService.apiService.registerAccount(MultipartBodyImage).enqueue(new Callback<User>() {
+                    @Override
+                    public void onResponse(Call<User> call, Response<User> response) {
+                        mProgressDialog.dismiss();
+                        User user = response.body();
+                        if(user != null){
+                            Toast.makeText(MainActivity.this,"Call Api success",Toast.LENGTH_SHORT).show();
+                            tvPredict.setText(user.getProbability().getG());
+                        }
+
+                    }
+
+                    @Override
+                    public void onFailure(Call<User> call, Throwable t) {
+                        mProgressDialog.dismiss();
+                        Toast.makeText(MainActivity.this,"Call Api failed",Toast.LENGTH_SHORT).show();
+
+                    }
+                });
+
+            }
         });
 
 
+//////////////////////////////////////////////////
         btnpicture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -154,6 +209,7 @@ public class MainActivity extends AppCompatActivity {
         btnSelectImage = findViewById(R.id.btn_select_image);
         button = findViewById(R.id.btn_upload_image);
         btnpicture = findViewById(R.id.btncamera_id);
+        tvPredict= findViewById(R.id.tv_predict);
 
     }
 
@@ -192,6 +248,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (requestCode == REQUEST_CODE && resultCode == RESULT_OK) {
+            Uri uri = data.getData();
+            mUri= uri;
             bitmap = (Bitmap) data.getExtras().get("data");
             imgFromGallery.setImageBitmap(bitmap);
 

@@ -14,16 +14,16 @@ import retrofit2.http.Part;
 import retrofit2.http.Path;
 
 public interface ApiService {
-    //Link API : http://localhost/phpmyadmin/index.php?route=/database/structure&server=1&db=upload_image&table=avt
-    public static final String DOMAIN ="http://localhost/phpmyadmin/index.php?route=/database/";
+    //Link API : http://127.0.0.1:5000/post
+    public static final String DOMAIN ="http://192.168.1.3:5000/";
 
-    Gson gson= new GsonBuilder().setDateFormat("yyyy MM dd HH:mm:ss").create();
+    Gson gson= new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss").create();
     ApiService apiService = new Retrofit.Builder()
             .baseUrl(DOMAIN)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
             .create(ApiService.class);
     @Multipart
-    @POST("structure&server=1&db=upload_image&table=avt")
-    Call<User> registerAccount(@Part MultipartBody.Part avt);
+    @POST("post")
+    Call<User> registerAccount(@Part MultipartBody.Part image);
 }
